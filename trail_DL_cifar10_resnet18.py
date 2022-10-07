@@ -10,8 +10,11 @@ import torchvision.transforms as transforms
 import os
 from models import *
 import pandas as pd
+import datetime
+from utils import data_save
 
-mylist = []
+trainlist = []
+validlist = []
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 best_acc = 0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
@@ -36,7 +39,7 @@ train_size, valid_size = int(0.8*length), int(0.2*length)
 train_set,valid_set=torch.utils.data.random_split(trainset,[train_size,valid_size])
 trainloader = torch.utils.data.DataLoader(
     train_set, batch_size=128, shuffle=True, num_workers=4)
-testloader = torch.utils.data.DataLoader(
+validloader = torch.utils.data.DataLoader(
     valid_set, batch_size=128, shuffle=False, num_workers=4)
 
 print('==> Building model..')
@@ -79,16 +82,18 @@ def train(epoch):
         _, predicted = outputs.max(1)
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
+    train_accuracy = 100. * correct / total
+    trainlist.append([epoch, (train_loss / (batch_idx + 1)), train_accuracy])
 
 
-def test(epoch):
+def valid(epoch):
     global best_acc
     net.eval()
     test_loss = 0
     correct = 0
     total = 0
     with torch.no_grad():
-        for batch_idx, (inputs, targets) in tqdm(enumerate(testloader)):
+        for batch_idx, (inputs, targets) in tqdm(enumerate(validloader)):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
             loss = criterion(outputs, targets)
@@ -97,19 +102,20 @@ def test(epoch):
             _, predicted = outputs.max(1)
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
-    mylist.append([epoch, (test_loss/(batch_idx+1)),100.*correct/total])
+    valid_accuracy = 100. * correct / total
+    validlist.append([epoch, (test_loss/(batch_idx+1)),valid_accuracy])
     # Save checkpoint.
-    acc = 100.*correct/total
-    if acc > best_acc:
+    if valid_accuracy > best_acc:
         print('Saving..')
         torch.save(net.state_dict(), 'result_temp.pt')
-        best_acc = acc
+        best_acc = valid_accuracy
 
-for epoch in range(start_epoch, start_epoch+20):
+for epoch in range(start_epoch, start_epoch+2):
     train(epoch)
-    test(epoch)
+    valid(epoch)
     print(best_acc)
 
-df = pd.DataFrame(mylist, columns=('epoch', 'V loss', 'V accu'))
-df.to_csv('results.csv')
+nowTime = datetime.datetime.now().strftime('%Y%m%d_%H:%M:%S')
+os.rename('result_temp.pt', str(nowTime)+'_'+'result'+'_'+str(best_acc)+'.pt')
+data_save(trainlist,validlist,nowTime,best_acc)
 print(best_acc)
