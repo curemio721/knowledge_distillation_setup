@@ -1,5 +1,7 @@
 import pandas as pd
 import datetime
+import shutil
+import os
 
 
 def data_save(trainlist, validlist, nowTime, best_acc):
@@ -9,4 +11,10 @@ def data_save(trainlist, validlist, nowTime, best_acc):
     df = pd.concat([df_train,df_valid], axis=1)
     df.to_csv(str(nowTime)+'_'+'result'+'_'+str(best_acc)+'.csv')
 
+    return
+
+
+def model_save(nowTime, best_acc):
+    shutil.copyfile('result_temp.pt', 'result_temp2.pt')
+    os.rename('result_temp2.pt', str(nowTime) + '_' + 'result' + '_' + str(best_acc) + '.pt')
     return

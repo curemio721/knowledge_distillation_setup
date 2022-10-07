@@ -1,3 +1,4 @@
+#%%
 import torch
 import torch.nn as nn
 import torch.utils.data
@@ -11,8 +12,11 @@ import os
 from models import *
 import pandas as pd
 import datetime
-from utils import data_save
+from utils import data_save, model_save
 
+
+
+#%%
 trainlist = []
 validlist = []
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -42,20 +46,7 @@ trainloader = torch.utils.data.DataLoader(
 validloader = torch.utils.data.DataLoader(
     valid_set, batch_size=128, shuffle=False, num_workers=4)
 
-print('==> Building model..')
 net = ResNet18()
-# net = PreActResNet18()
-# net = GoogLeNet()
-# net = DenseNet121()
-# net = ResNeXt29_2x64d()
-# net = MobileNet()
-# net = MobileNetV2()
-# net = DPN92()
-# net = ShuffleNetG2()
-# net = SENet18()
-# net = ShuffleNetV2(1)
-# net = EfficientNetB0()
-# net = RegNetX_200MF()
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)  # DataParallel
@@ -110,12 +101,15 @@ def valid(epoch):
         torch.save(net.state_dict(), 'result_temp.pt')
         best_acc = valid_accuracy
 
+
+#%%
 for epoch in range(start_epoch, start_epoch+2):
     train(epoch)
     valid(epoch)
     print(best_acc)
 
+#%%
 nowTime = datetime.datetime.now().strftime('%Y%m%d_%H:%M:%S')
-os.rename('result_temp.pt', str(nowTime)+'_'+'result'+'_'+str(best_acc)+'.pt')
+model_save(nowTime, best_acc)
 data_save(trainlist,validlist,nowTime,best_acc)
 print(best_acc)
