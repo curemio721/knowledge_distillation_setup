@@ -97,15 +97,12 @@ def test(epoch):
             _, predicted = outputs.max(1)
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
-
-
     mylist.append([epoch, (test_loss/(batch_idx+1)),100.*correct/total])
-
     # Save checkpoint.
     acc = 100.*correct/total
     if acc > best_acc:
         print('Saving..')
-        torch.save(net.state_dict(), 'ICONIP_results/teacher_model.pt')
+        torch.save(net.state_dict(), 'result_temp.pt')
         best_acc = acc
 
 for epoch in range(start_epoch, start_epoch+20):
@@ -114,6 +111,5 @@ for epoch in range(start_epoch, start_epoch+20):
     print(best_acc)
 
 df = pd.DataFrame(mylist, columns=('epoch', 'V loss', 'V accu'))
-
-df.to_csv('results_teacher.csv')
+df.to_csv('results.csv')
 print(best_acc)
